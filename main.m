@@ -10,6 +10,8 @@
 #include "gfx.c"
 #include "audio.c"
 
+#include "shaders.c"
+
 static const NSOpenGLPixelFormatAttribute attrs[] = {
     NSOpenGLPFAOpenGLProfile, NSOpenGLProfileVersion3_2Core,
     NSOpenGLPFAColorSize, 24,
@@ -43,13 +45,84 @@ int main() {
 
     AVAudioPlayer *audioPlayer = [[AVAudioPlayer alloc] initWithData:wavData error:(void*)(0)];
 
+// --- gfx init -----------------------------------------------------
+
+    GLint len = strlen(vert_shader);
+    GLuint vert = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vert, 1, &vert_shader, &len);
+    glCompileShader(vert);
+
+#ifdef J_DEBUG
+    GLint isCompiled = 0;
+    glGetShaderiv(vert, GL_COMPILE_STATUS, &isCompiled);
+    if(isCompiled == GL_FALSE) {
+        GLsizei maxLength = 2048;
+        GLchar errorLog[2048];
+        glGetShaderInfoLog(vert, maxLength, &maxLength, &errorLog[0]);
+        printf("%s\n%s", vert_shader, errorLog);
+        exit(1);
+    }
+#endif
+
+    len = strlen(frag_shader);
+    GLuint frag = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(frag, 1, &frag_shader, &len);
+    glCompileShader(frag);
+
+#ifdef J_DEBUG
+    glGetShaderiv(frag, GL_COMPILE_STATUS, &isCompiled);
+    if(isCompiled == GL_FALSE) {
+        GLsizei maxLength = 2048;
+        GLchar errorLog[2048];
+        glGetShaderInfoLog(frag, maxLength, &maxLength, &errorLog[0]);
+        printf("%s", errorLog);
+        exit(1);
+    }
+#endif
+
+    GLuint program = glCreateProgram();
+    glAttachShader(program, vert);
+    glAttachShader(program, frag);
+    glLinkProgram(program);
+    GLint posLoc = glGetAttribLocation(program, "a");
+    GLint uniLoc = glGetUniformLocation(program, "t");
+
+#ifdef J_DEBUG
+    GLsizei maxLength = 2048;
+    GLchar errorLog[2048];
+    glGetProgramInfoLog(program, maxLength, &maxLength, &errorLog[0]);
+    printf("%s", errorLog);
+#endif
+
+    GLuint tri_vertex_buff;
+    char bufdata[6] = { 1, 1, 1, 128, 128, 1 };
+    glGenBuffers(1, &tri_vertex_buff);
+
+    GLuint vao;
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
+
+    glBindBuffer(GL_ARRAY_BUFFER, tri_vertex_buff);
+    glBufferData(GL_ARRAY_BUFFER, 6, bufdata, GL_STATIC_DRAW);
+
+// ------------------------------------------------------------------
+
     int counter = 0;
     while (++counter < 30 + 60 * AUDIO_DURATION) {
         if (counter == 30) {
             [audioPlayer play];
         }
         if (counter > 30) {
-            render();
+// ------------------------------------------------------------------
+            glBindVertexArray(vao);
+            glUseProgram(program);
+            GLint posLoc = glGetAttribLocation(program, "a");
+            glBindBuffer(GL_ARRAY_BUFFER, tri_vertex_buff);
+            glUniform1f(uniLoc, (float)counter);
+            glEnableVertexAttribArray(posLoc);
+            glVertexAttribPointer(posLoc, 2, GL_BYTE, false, 0, 0);
+            glDrawArrays(GL_TRIANGLES, 0, 3);
+// ------------------------------------------------------------------
         }
         [context flushBuffer];
         NSEvent *event;
