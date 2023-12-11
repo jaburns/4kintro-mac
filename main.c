@@ -11,23 +11,43 @@
 #include "audio.c"
 #include "gfx.c"
 
-static void* oc_call_0(BOOL getclass, void* this, const char* a) {
-    if (getclass) this = objc_getClass(this);
-    return ((void* (*)(void*, void*))objc_msgSend)(this, sel_registerName(a));
-}
-static void* oc_call_1(BOOL getclass, void* this, const char* a, void* b) {
-    if (getclass) this = objc_getClass(this);
-    return ((void* (*)(void*, void*, void*))objc_msgSend)(this, sel_registerName(a), b);
-}
-static void* oc_call_2(void* this, const char* a, void* b, void* c) {
-    return ((void* (*)(void*, void*, void*, void*))objc_msgSend)(this, sel_registerName(a), b, c);
-}
+#define oc_static_0(T0, this, a) \
+    ((T0 (*)(Class, SEL))objc_msgSend)(this, sel_registerName(a))
+
+#define oc_call_0(T0, T1, this, a) \
+    ((T0 (*)(T1, SEL))objc_msgSend)(this, sel_registerName(a))
+
+#define oc_static_1(T0, T1, this, a, b) \
+    ((T0 (*)(Class, SEL, T1))objc_msgSend)(this, sel_registerName(a), b)
+
+#define oc_call_1(T0, T1, T2, this, a, b) \
+    ((T0 (*)(T1, SEL, T2))objc_msgSend)(this, sel_registerName(a), b)
+
+#define oc_call_2(T0, T1, T2, T3, this, a, b, c) \
+    ((T0 (*)(T1, SEL, T2, T3))objc_msgSend)(this, sel_registerName(a), b, c)
+
+
 
 int main() {
-    id sharedApp = oc_call_0(true, "NSApplication", "sharedApplication");
-    oc_call_1(false, sharedApp, "setActivationPolicy:", NSApplicationActivationPolicyRegular);
+    static const char *ns_class_names[8] = {
+        "NSApplication",
+        "NSWindow",
+        "NSOpenGLPixelFormat",
+        "NSOpenGLContext",
+        "AVAudioPlayer",
+        "NSDate",
+        "NSMutableData",
+        "NSString",
+    };
+    Class ns_classes[8];
+    for (int i = 0; i < 8; ++i) {
+        ns_classes[i] = objc_getClass(ns_class_names[i]);
+    }
 
-    id window = oc_call_0(true, "NSWindow", "alloc");
+    id sharedApp = oc_static_0(id, ns_classes[0], "sharedApplication");
+    oc_call_1(void*, id, NSInteger, sharedApp, "setActivationPolicy:", NSApplicationActivationPolicyRegular);
+
+    id window = oc_static_0(id, ns_classes[1], "alloc");
     window = ((id (*)(id, SEL, NSRect, NSUInteger, NSBackingStoreType, BOOL))objc_msgSend)(
         window,
         sel_registerName("initWithContentRect:styleMask:backing:defer:"),
@@ -45,38 +65,37 @@ int main() {
         NSOpenGLPFAAccelerated,
         0
     };
+    id pixelFormat = oc_static_0(id, ns_classes[2], "alloc");
+    pixelFormat = oc_call_1(id, id, const NSOpenGLPixelFormatAttribute*, pixelFormat, "initWithAttributes:", attrs);
 
-    id pixelFormat = oc_call_0(true, "NSOpenGLPixelFormat", "alloc");
-    pixelFormat = oc_call_1(false, pixelFormat, "initWithAttributes:", attrs);
+    id context = oc_static_0(id, ns_classes[3], "alloc");
+    context = oc_call_2(id, id, id, id, context, "initWithFormat:shareContext:", pixelFormat, NULL);
 
-    id context = oc_call_0(true, "NSOpenGLContext", "alloc");
-    context = oc_call_2(context, "initWithFormat:shareContext:", pixelFormat, NULL);
+    id contentView = oc_call_0(id, id, window, "contentView");
+    oc_call_1(void, id, id, context, "setView:", contentView);
+    oc_call_0(id, id, context, "makeCurrentContext");
+    oc_call_1(void, id, id, window, "toggleFullScreen:", NULL);
 
-    id contentView = oc_call_0(false, window, "contentView");
-    oc_call_1(false, context, "setView:", contentView);
-    oc_call_0(false, context, "makeCurrentContext");
-    oc_call_1(false, window, "toggleFullScreen:", NULL);
-
-    id wavData = oc_call_1(true, "NSMutableData", "dataWithLength:", SIZEOF_WORD * AUDIO_NUMSAMPLES + 44);
-    char *buffer = oc_call_0(false, wavData, "mutableBytes");
+    id wavData = oc_static_1(id, NSUInteger, ns_classes[6], "dataWithLength:", SIZEOF_WORD * AUDIO_NUMSAMPLES + 44);
+    char *buffer = oc_call_0(char*, id, wavData, "mutableBytes");
     memcpy(buffer, wav_header, 44);
     run_synth((short*)(buffer + 44));
 
-    id audioPlayer = oc_call_0(true, "AVAudioPlayer", "alloc");
-    audioPlayer = oc_call_2(audioPlayer, "initWithData:error:", wavData, NULL);
+    id audioPlayer = oc_static_0(id,ns_classes[4], "alloc");
+    audioPlayer = oc_call_2(id, id, id, id, audioPlayer, "initWithData:error:", wavData, NULL);
 
-    id distantPast = oc_call_0(true, "NSDate", "distantPast");
-    id defaultRunLoopMode = oc_call_1(true, "NSString", "stringWithUTF8String:", "kCFRunLoopDefaultMode");
+    id distantPast = oc_static_0(id,ns_classes[5], "distantPast");
+    id defaultRunLoopMode = oc_static_1(id, const char*, ns_classes[7], "stringWithUTF8String:", "kCFRunLoopDefaultMode");
 
     int counter = 0;
     while (++counter < 30 + 60 * AUDIO_DURATION) {
         if (counter == 30) {
-            oc_call_0(false, audioPlayer, "play");
+            oc_call_0(id, id, audioPlayer, "play");
         }
         if (counter > 30) {
             render();
         }
-        oc_call_0(false, context, "flushBuffer");
+        oc_call_0(id, id, context, "flushBuffer");
         for (;;) {
             id event = ((id (*)(id, SEL, NSUInteger, id, id, BOOL))objc_msgSend)(
                 sharedApp,
@@ -87,7 +106,7 @@ int main() {
                 YES
             );
             if (event) {
-                oc_call_1(false, sharedApp, "sendEvent:", event);
+                oc_call_1(void, id, id, sharedApp, "sendEvent:", event);
             } else {
                 break;
             }
