@@ -10,6 +10,15 @@
 #include "gfx.c"
 #include "audio.c"
 
+static const NSOpenGLPixelFormatAttribute attrs[] = {
+    NSOpenGLPFAOpenGLProfile, NSOpenGLProfileVersion3_2Core,
+    NSOpenGLPFAColorSize, 24,
+    NSOpenGLPFAAlphaSize, 8,
+    NSOpenGLPFADoubleBuffer,
+    NSOpenGLPFAAccelerated,
+    0
+};
+
 int main() {
     [NSApplication sharedApplication];
     [NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
@@ -20,15 +29,6 @@ int main() {
         backing: NSBackingStoreBuffered
         defer: NO
     ];
-
-    NSOpenGLPixelFormatAttribute attrs[] = {
-        NSOpenGLPFAOpenGLProfile, NSOpenGLProfileVersion3_2Core,
-        NSOpenGLPFAColorSize, 24,
-        NSOpenGLPFAAlphaSize, 8,
-        NSOpenGLPFADoubleBuffer,
-        NSOpenGLPFAAccelerated,
-        0
-    };
 
     NSOpenGLPixelFormat *pf = [[NSOpenGLPixelFormat alloc] initWithAttributes:attrs];
     NSOpenGLContext *context = [[NSOpenGLContext alloc] initWithFormat:pf shareContext:nil];
