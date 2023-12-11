@@ -116,11 +116,12 @@ int main() {
     glBufferData(GL_ARRAY_BUFFER, 6, bufdata, GL_STATIC_DRAW);
     glEnableVertexAttribArray(posLoc);
     glVertexAttribPointer(posLoc, 2, GL_BYTE, false, 0, 0);
+    glViewport(0,0,width,height);
 
     mach_timebase_info_data_t info;
     mach_timebase_info(&info);
 
-    for (int i = 0; i < 30; ++i) {
+    for (int i = 0; i < 0xf; ++i) {
         [context flushBuffer];
         NSEvent *event;
         while ((event = [NSApp
@@ -131,11 +132,10 @@ int main() {
         ])) {
             [NSApp sendEvent:event];
         }
-        usleep(16000);
+        usleep(0x7fff);
     }
 
     [audioPlayer play];
-    glViewport(0,0,width,height);
     uint64_t start = mach_absolute_time();
 
     for (;;) {
