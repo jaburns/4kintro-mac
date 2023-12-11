@@ -116,7 +116,7 @@ int main() {
     glBufferData(GL_ARRAY_BUFFER, 6, bufdata, GL_STATIC_DRAW);
     glEnableVertexAttribArray(posLoc);
     glVertexAttribPointer(posLoc, 2, GL_BYTE, false, 0, 0);
-    glViewport(0,0,width,height);
+    glViewport(0, 0, width, height);
 
     mach_timebase_info_data_t info;
     mach_timebase_info(&info);
