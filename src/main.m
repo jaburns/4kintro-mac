@@ -116,30 +116,17 @@ int main() {
     glBufferData(GL_ARRAY_BUFFER, 6, bufdata, GL_STATIC_DRAW);
     glEnableVertexAttribArray(posLoc);
     glVertexAttribPointer(posLoc, 2, GL_BYTE, false, 0, 0);
+    glViewport(0, 0, width, height);
 
     mach_timebase_info_data_t info;
     mach_timebase_info(&info);
 
-    for (int i = 0; i < 30; ++i) {
-        [context flushBuffer];
-        NSEvent *event;
-        while ((event = [NSApp
-            nextEventMatchingMask: NSEventMaskAny
-            untilDate: [NSDate distantPast]
-            inMode: NSDefaultRunLoopMode
-            dequeue: YES
-        ])) {
-            [NSApp sendEvent:event];
-        }
-        usleep(16000);
-    }
-
     [audioPlayer play];
-    glViewport(0,0,width,height);
     uint64_t start = mach_absolute_time();
 
     for (;;) {
-        uint64_t total_nano = (mach_absolute_time() - start) * info.numer / info.denom;
+        uint64_t time = mach_absolute_time();
+        uint64_t total_nano = (time - start) * info.numer / info.denom;
         float secs = (float)(total_nano / 100000) / 10000.0f;
         if (secs > (float)AUDIO_DURATION) {
             break;

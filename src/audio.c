@@ -40,6 +40,8 @@ static float kick( float time )
 
 static float getSound( float time )
 {
+    if (time < 0.5) return 0.0;
+    time -= 0.5;
     return clamp(kick(fmodf(time, .5)), -1.0, 1.0);
 }
 
