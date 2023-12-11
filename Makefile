@@ -1,4 +1,4 @@
-.PHONY: run clean
+.PHONY: run clean dist
 
 build/demo: build/binary.br src/wrapper.sh
 	cat src/wrapper.sh build/binary.br > build/demo
@@ -21,3 +21,6 @@ run: build/demo
 clean:
 	rm -rf build
 	rm src/shaders.gen.c
+
+dist: build/demo
+	cd build; zip demo.zip demo
