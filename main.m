@@ -7,7 +7,6 @@
 
 #include "math.h"
 
-#include "gfx.c"
 #include "audio.c"
 
 #include "shaders.c"
@@ -25,8 +24,10 @@ int main() {
     [NSApplication sharedApplication];
     [NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
 
+    NSRect screen_rect = [[NSScreen mainScreen] frame];
+
     NSWindow *window = [[NSWindow alloc]
-        initWithContentRect: NSMakeRect(0, 0, 800, 600)
+        initWithContentRect: screen_rect
         styleMask: NSWindowStyleMaskTitled | NSWindowStyleMaskClosable | NSWindowStyleMaskResizable
         backing: NSBackingStoreBuffered
         defer: NO
@@ -47,9 +48,8 @@ int main() {
 
 // --- gfx init -----------------------------------------------------
 
-    GLint len = strlen(vert_shader);
     GLuint vert = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vert, 1, &vert_shader, &len);
+    glShaderSource(vert, 1, &vert_shader, &vert_len);
     glCompileShader(vert);
 
 #ifdef J_DEBUG
@@ -64,9 +64,8 @@ int main() {
     }
 #endif
 
-    len = strlen(frag_shader);
     GLuint frag = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(frag, 1, &frag_shader, &len);
+    glShaderSource(frag, 1, &frag_shader, &frag_len);
     glCompileShader(frag);
 
 #ifdef J_DEBUG
@@ -95,7 +94,7 @@ int main() {
 #endif
 
     GLuint tri_vertex_buff;
-    char bufdata[6] = { 1, 1, 1, 128, 128, 1 };
+    static const char bufdata[6] = { 1, 1, 1, 128, 128, 1 };
     glGenBuffers(1, &tri_vertex_buff);
 
     GLuint vao;
@@ -111,6 +110,7 @@ int main() {
     while (++counter < 30 + 60 * AUDIO_DURATION) {
         if (counter == 30) {
             [audioPlayer play];
+            glViewport(0,0,screen_rect.size.width,screen_rect.size.height);
         }
         if (counter > 30) {
 // ------------------------------------------------------------------
@@ -118,7 +118,9 @@ int main() {
             glUseProgram(program);
             GLint posLoc = glGetAttribLocation(program, "a");
             glBindBuffer(GL_ARRAY_BUFFER, tri_vertex_buff);
-            glUniform1f(uniLoc, (float)counter);
+            glUniform3f(uniLoc,
+(float)screen_rect.size.width,(float)screen_rect.size.height,
+                    (float)counter/60.0);
             glEnableVertexAttribArray(posLoc);
             glVertexAttribPointer(posLoc, 2, GL_BYTE, false, 0, 0);
             glDrawArrays(GL_TRIANGLES, 0, 3);

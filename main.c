@@ -11,7 +11,6 @@
 #include "unistd.h"
 
 #include "audio.c"
-#include "gfx.c"
 #include "shaders.c"
 
 #ifdef J_DEBUG
@@ -128,9 +127,8 @@ int main() {
 
 // --- gfx init -----------------------------------------------------
 
-    GLint len = strlen(vert_shader);
     GLuint vert = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vert, 1, &vert_shader, &len);
+    glShaderSource(vert, 1, &vert_shader, &vert_len);
     glCompileShader(vert);
 
 #ifdef J_DEBUG
@@ -145,9 +143,8 @@ int main() {
     }
 #endif
 
-    len = strlen(frag_shader);
     GLuint frag = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(frag, 1, &frag_shader, &len);
+    glShaderSource(frag, 1, &frag_shader, &frag_len);
     glCompileShader(frag);
 
 #ifdef J_DEBUG
