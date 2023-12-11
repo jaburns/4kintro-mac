@@ -1,2 +1,2 @@
-binary
-demo
+build/
+src/shaders.gen.c

@@ -4,12 +4,10 @@
 #import <Cocoa/Cocoa.h>
 #import <OpenGL/gl3.h>
 #import <AVFoundation/AVFoundation.h>
-
 #include "math.h"
 
 #include "audio.c"
-
-#include "shaders.c"
+#include "shaders.gen.c"
 
 static const NSOpenGLPixelFormatAttribute attrs[] = {
     NSOpenGLPFAOpenGLProfile, NSOpenGLProfileVersion3_2Core,
@@ -25,6 +23,9 @@ int main() {
     [NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
 
     NSRect screen_rect = [[NSScreen mainScreen] frame];
+    float scale = [[NSScreen mainScreen] backingScaleFactor];
+    float width = (float)screen_rect.size.width * scale;
+    float height = (float)screen_rect.size.height * scale;
 
     NSWindow *window = [[NSWindow alloc]
         initWithContentRect: screen_rect
@@ -49,7 +50,8 @@ int main() {
 // --- gfx init -----------------------------------------------------
 
     GLuint vert = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vert, 1, &vert_shader, &vert_len);
+    int slen = VERT_MIN_LENGTH;
+    glShaderSource(vert, 1, &VERT_MIN, &slen);
     glCompileShader(vert);
 
 #ifdef J_DEBUG
@@ -59,13 +61,14 @@ int main() {
         GLsizei maxLength = 2048;
         GLchar errorLog[2048];
         glGetShaderInfoLog(vert, maxLength, &maxLength, &errorLog[0]);
-        printf("%s\n%s", vert_shader, errorLog);
+        printf("%s", errorLog);
         exit(1);
     }
 #endif
 
     GLuint frag = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(frag, 1, &frag_shader, &frag_len);
+    slen = FRAG_MIN_LENGTH;
+    glShaderSource(frag, 1, &FRAG_MIN, &slen);
     glCompileShader(frag);
 
 #ifdef J_DEBUG
@@ -110,7 +113,7 @@ int main() {
     while (++counter < 30 + 60 * AUDIO_DURATION) {
         if (counter == 30) {
             [audioPlayer play];
-            glViewport(0,0,screen_rect.size.width,screen_rect.size.height);
+            glViewport(0,0,width,height);
         }
         if (counter > 30) {
 // ------------------------------------------------------------------
@@ -118,9 +121,7 @@ int main() {
             glUseProgram(program);
             GLint posLoc = glGetAttribLocation(program, "a");
             glBindBuffer(GL_ARRAY_BUFFER, tri_vertex_buff);
-            glUniform3f(uniLoc,
-(float)screen_rect.size.width,(float)screen_rect.size.height,
-                    (float)counter/60.0);
+            glUniform3f(uniLoc, width, height, (float)counter/60.0);
             glEnableVertexAttribArray(posLoc);
             glVertexAttribPointer(posLoc, 2, GL_BYTE, false, 0, 0);
             glDrawArrays(GL_TRIANGLES, 0, 3);
