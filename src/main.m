@@ -1,9 +1,12 @@
 #define GL_SILENCE_DEPRECATION
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
 
+//#define J_DEBUG
+
 #import <Cocoa/Cocoa.h>
 #import <OpenGL/gl3.h>
 #import <AVFoundation/AVFoundation.h>
+#include <mach/mach_time.h>
 #include "math.h"
 
 #include "audio.c"
@@ -47,102 +50,114 @@ int main() {
 
     AVAudioPlayer *audioPlayer = [[AVAudioPlayer alloc] initWithData:wavData error:(void*)(0)];
 
-// --- gfx init -----------------------------------------------------
+#ifdef J_DEBUG
+    GLsizei errorMaxLen = 32768;
+    GLchar errorLog[32768];
 
     GLuint vert = glCreateShader(GL_VERTEX_SHADER);
     int slen = VERT_MIN_LENGTH;
     glShaderSource(vert, 1, &VERT_MIN, &slen);
     glCompileShader(vert);
 
-#ifdef J_DEBUG
-    GLint isCompiled = 0;
-    glGetShaderiv(vert, GL_COMPILE_STATUS, &isCompiled);
-    if(isCompiled == GL_FALSE) {
-        GLsizei maxLength = 2048;
-        GLchar errorLog[2048];
-        glGetShaderInfoLog(vert, maxLength, &maxLength, &errorLog[0]);
-        printf("%s", errorLog);
+    glGetShaderInfoLog(vert, errorMaxLen, &errorMaxLen, &errorLog[0]);
+    if (strlen(errorLog) > 0) {
+        printf("VERT SHADER ERROR:\n%s", errorLog);
         exit(1);
     }
-#endif
 
     GLuint frag = glCreateShader(GL_FRAGMENT_SHADER);
     slen = FRAG_MIN_LENGTH;
     glShaderSource(frag, 1, &FRAG_MIN, &slen);
     glCompileShader(frag);
 
-#ifdef J_DEBUG
-    glGetShaderiv(frag, GL_COMPILE_STATUS, &isCompiled);
-    if(isCompiled == GL_FALSE) {
-        GLsizei maxLength = 2048;
-        GLchar errorLog[2048];
-        glGetShaderInfoLog(frag, maxLength, &maxLength, &errorLog[0]);
-        printf("%s", errorLog);
+    glGetShaderInfoLog(frag, errorMaxLen, &errorMaxLen, &errorLog[0]);
+    if (strlen(errorLog) > 0) {
+        printf("FRAG SHADER ERROR:\n%s", errorLog);
         exit(1);
     }
-#endif
 
     GLuint program = glCreateProgram();
     glAttachShader(program, vert);
     glAttachShader(program, frag);
     glLinkProgram(program);
-    GLint posLoc = glGetAttribLocation(program, "a");
-    GLint uniLoc = glGetUniformLocation(program, "t");
 
-#ifdef J_DEBUG
-    GLsizei maxLength = 2048;
-    GLchar errorLog[2048];
-    glGetProgramInfoLog(program, maxLength, &maxLength, &errorLog[0]);
-    printf("%s", errorLog);
+    glGetProgramInfoLog(program, errorMaxLen, &errorMaxLen, &errorLog[0]);
+    if (strlen(errorLog) > 0) {
+        printf("SHADER LINK ERROR:\n%s", errorLog);
+        exit(1);
+    }
+#else
+    GLuint program = glCreateProgram();
+    GLuint vert = glCreateShader(GL_VERTEX_SHADER);
+    GLuint frag = glCreateShader(GL_FRAGMENT_SHADER);
+    int slen = VERT_MIN_LENGTH;
+    glShaderSource(vert, 1, &VERT_MIN, &slen);
+    slen = FRAG_MIN_LENGTH;
+    glShaderSource(frag, 1, &FRAG_MIN, &slen);
+    glCompileShader(vert);
+    glCompileShader(frag);
+    glAttachShader(program, vert);
+    glAttachShader(program, frag);
+    glLinkProgram(program);
 #endif
 
-    GLuint tri_vertex_buff;
     static const char bufdata[6] = { 1, 1, 1, 128, 128, 1 };
-    glGenBuffers(1, &tri_vertex_buff);
 
-    GLuint vao;
+    GLint posLoc = glGetAttribLocation(program, "a");
+    GLint uniLoc = glGetUniformLocation(program, "t");
+    glUseProgram(program);
+
+    GLuint verts, vao;
+
+    glGenBuffers(1, &verts);
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
-
-    glBindBuffer(GL_ARRAY_BUFFER, tri_vertex_buff);
+    glBindBuffer(GL_ARRAY_BUFFER, verts);
     glBufferData(GL_ARRAY_BUFFER, 6, bufdata, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(posLoc);
+    glVertexAttribPointer(posLoc, 2, GL_BYTE, false, 0, 0);
 
-// ------------------------------------------------------------------
+    mach_timebase_info_data_t info;
+    mach_timebase_info(&info);
 
-    int counter = 0;
-    while (++counter < 30 + 60 * AUDIO_DURATION) {
-        if (counter == 30) {
-            [audioPlayer play];
-            glViewport(0,0,width,height);
-        }
-        if (counter > 30) {
-// ------------------------------------------------------------------
-            glBindVertexArray(vao);
-            glUseProgram(program);
-            GLint posLoc = glGetAttribLocation(program, "a");
-            glBindBuffer(GL_ARRAY_BUFFER, tri_vertex_buff);
-            glUniform3f(uniLoc, width, height, (float)counter/60.0);
-            glEnableVertexAttribArray(posLoc);
-            glVertexAttribPointer(posLoc, 2, GL_BYTE, false, 0, 0);
-            glDrawArrays(GL_TRIANGLES, 0, 3);
-// ------------------------------------------------------------------
-        }
+    for (int i = 0; i < 30; ++i) {
         [context flushBuffer];
         NSEvent *event;
-        for (;;) {
-            event = [NSApp
-                nextEventMatchingMask: NSEventMaskAny
-                untilDate: [NSDate distantPast]
-                inMode: NSDefaultRunLoopMode
-                dequeue: YES
-            ];
-            if (event) {
-                [NSApp sendEvent:event];
-            } else {
-                break;
-            }
+        while ((event = [NSApp
+            nextEventMatchingMask: NSEventMaskAny
+            untilDate: [NSDate distantPast]
+            inMode: NSDefaultRunLoopMode
+            dequeue: YES
+        ])) {
+            [NSApp sendEvent:event];
         }
         usleep(16000);
+    }
+
+    [audioPlayer play];
+    glViewport(0,0,width,height);
+    uint64_t start = mach_absolute_time();
+
+    for (;;) {
+        uint64_t total_nano = (mach_absolute_time() - start) * info.numer / info.denom;
+        float secs = (float)(total_nano / 100000) / 10000.0f;
+        if (secs > (float)AUDIO_DURATION) {
+            break;
+        }
+        glUniform3f(uniLoc, width, height, secs);
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+
+        [context flushBuffer];
+        NSEvent *event;
+        while ((event = [NSApp
+            nextEventMatchingMask: NSEventMaskAny
+            untilDate: [NSDate distantPast]
+            inMode: NSDefaultRunLoopMode
+            dequeue: YES
+        ])) {
+            [NSApp sendEvent:event];
+        }
+        usleep(1);
     }
 
     return 0;

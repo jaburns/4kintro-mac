@@ -8,7 +8,7 @@ build/demo: build/binary.br src/wrapper.sh
 src/shaders.gen.c: src/vert.glsl src/frag.glsl
 	tools/minify.py
 
-build/binary.br: src/main.m src/shaders.gen.c
+build/binary.br: src/main.m src/shaders.gen.c src/audio.c
 	mkdir -p build
 	clang -framework AVFoundation -framework Cocoa -framework OpenGL src/main.m -Oz -o build/binary
 	cp build/binary build/unstripped
