@@ -10,7 +10,7 @@ src/shaders.gen.c: src/vert.glsl src/frag.glsl
 
 build/binary.br: src/main.m src/shaders.gen.c
 	mkdir -p build
-	clang -framework AVFoundation -framework Cocoa -framework OpenGL src/main.c -Oz -o build/binary
+	clang -framework AVFoundation -framework Cocoa -framework OpenGL src/main.m -Oz -o build/binary
 	cp build/binary build/unstripped
 	strip -SXTNx build/binary
 	brotli -fq 11 build/binary
