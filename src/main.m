@@ -45,10 +45,10 @@ int main() {
 
     NSMutableData *wavData = [NSMutableData dataWithLength:(SIZEOF_WORD * AUDIO_NUMSAMPLES + 44)];
     char *buffer = (char *)wavData.mutableBytes;
-    memcpy(buffer, wav_header, 44);
     run_synth((short*)buffer + 44);
+    memcpy(buffer, wav_header, 44);
 
-    AVAudioPlayer *audioPlayer = [[AVAudioPlayer alloc] initWithData:wavData error:(void*)(0)];
+    AVAudioPlayer *audioPlayer = [[AVAudioPlayer alloc] initWithData:wavData error:nil];
 
 #ifdef J_DEBUG
     GLsizei errorMaxLen = 32768;
@@ -88,24 +88,27 @@ int main() {
     }
 #else
     GLuint program = glCreateProgram();
+
     GLuint vert = glCreateShader(GL_VERTEX_SHADER);
-    GLuint frag = glCreateShader(GL_FRAGMENT_SHADER);
     int slen = VERT_MIN_LENGTH;
     glShaderSource(vert, 1, &VERT_MIN, &slen);
+    glCompileShader(vert);
+    glAttachShader(program, vert);
+
+    GLuint frag = glCreateShader(GL_FRAGMENT_SHADER);
     slen = FRAG_MIN_LENGTH;
     glShaderSource(frag, 1, &FRAG_MIN, &slen);
-    glCompileShader(vert);
     glCompileShader(frag);
-    glAttachShader(program, vert);
     glAttachShader(program, frag);
+
     glLinkProgram(program);
 #endif
 
     static const char bufdata[6] = { 1, 1, 1, 128, 128, 1 };
 
+    glUseProgram(program);
     GLint posLoc = glGetAttribLocation(program, "a");
     GLint uniLoc = glGetUniformLocation(program, "t");
-    glUseProgram(program);
 
     GLuint verts, vao;
 

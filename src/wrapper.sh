@@ -1,6 +1,6 @@
 #!/bin/sh
 a=/tmp/A
-tail -c+76 "$BASH_SOURCE"|brotli -d>$a
+tail -c+74 "$BASH_SOURCE"|gzip -d>$a
 chmod +x $a
 $a
 >
