@@ -23,7 +23,7 @@ def main():
             with open(minified, 'r') as file:
                 contents = file.read()
                 name = os.path.basename(minified).replace('.', '_').upper()
-                header.write(f"const char *{name} = \"{escape_string(contents)}\";\n")
+                header.write(f"#define {name} \"{escape_string(contents)}\"\n")
                 header.write(f"#define {name}_LENGTH {len(contents)}\n")
 
 if __name__ == "__main__":

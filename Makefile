@@ -5,7 +5,7 @@ build/demo: build/binary.pack src/wrapper.sh
 	chmod +x build/demo
 	stat build/demo | cut -f 8 -d' '
 
-src/shaders.gen.c: src/vert.glsl src/frag.glsl
+src/shaders.gen.c: src/vert.glsl src/frag.glsl tools/minify.py
 	tools/minify.py
 
 build/binary.pack: src/main.m src/shaders.gen.c src/audio.c

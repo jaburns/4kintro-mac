@@ -90,14 +90,16 @@ int main() {
     GLuint program = glCreateProgram();
 
     GLuint vert = glCreateShader(GL_VERTEX_SHADER);
+    const char *src = VERT_MIN;
     int slen = VERT_MIN_LENGTH;
-    glShaderSource(vert, 1, &VERT_MIN, &slen);
+    glShaderSource(vert, 1, &src, &slen);
     glCompileShader(vert);
     glAttachShader(program, vert);
 
     GLuint frag = glCreateShader(GL_FRAGMENT_SHADER);
+    src = FRAG_MIN;
     slen = FRAG_MIN_LENGTH;
-    glShaderSource(frag, 1, &FRAG_MIN, &slen);
+    glShaderSource(frag, 1, &src, &slen);
     glCompileShader(frag);
     glAttachShader(program, frag);
 
