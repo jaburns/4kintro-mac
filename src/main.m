@@ -1,7 +1,7 @@
 #define GL_SILENCE_DEPRECATION
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
 
-//#define J_DEBUG
+#define J_DEBUG
 
 #import <Cocoa/Cocoa.h>
 #import <OpenGL/gl3.h>
@@ -54,9 +54,11 @@ int main() {
     GLsizei errorMaxLen = 32768;
     GLchar errorLog[32768];
 
+
     GLuint vert = glCreateShader(GL_VERTEX_SHADER);
+    const char *src = VERT_MIN;
     int slen = VERT_MIN_LENGTH;
-    glShaderSource(vert, 1, &VERT_MIN, &slen);
+    glShaderSource(vert, 1, &src, &slen);
     glCompileShader(vert);
 
     glGetShaderInfoLog(vert, errorMaxLen, &errorMaxLen, &errorLog[0]);
@@ -66,8 +68,9 @@ int main() {
     }
 
     GLuint frag = glCreateShader(GL_FRAGMENT_SHADER);
+    src = FRAG_MIN;
     slen = FRAG_MIN_LENGTH;
-    glShaderSource(frag, 1, &FRAG_MIN, &slen);
+    glShaderSource(frag, 1, &src, &slen);
     glCompileShader(frag);
 
     glGetShaderInfoLog(frag, errorMaxLen, &errorMaxLen, &errorLog[0]);
@@ -110,7 +113,7 @@ int main() {
 
     glUseProgram(program);
     GLint posLoc = glGetAttribLocation(program, "a");
-    GLint uniLoc = glGetUniformLocation(program, "t");
+    GLint uniLoc = glGetUniformLocation(program, "T");
 
     GLuint verts, vao;
 
